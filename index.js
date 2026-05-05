@@ -3,41 +3,28 @@ const bodyParser = require('body-parser');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 
-// ========== DEBUGGING ENVIRONMENT VARIABLES ==========
-console.log("=== CHECK ENVIRONMENT VARIABLES ===");
-console.log("GOOGLE_CLIENT_EMAIL exists:", !!process.env.GOOGLE_CLIENT_EMAIL);
-console.log("GOOGLE_PRIVATE_KEY exists:", !!process.env.GOOGLE_PRIVATE_KEY);
-console.log("SPREADSHEET_ID exists:", !!process.env.SPREADSHEET_ID);
-console.log("======================================");
-
-// ========== AUTHENTICATION GOOGLE SHEETS ==========
+// ========== BACA CREDENTIALS DARI FILE (CARA PALING MUDAH) ==========
 let auth;
 try {
-  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-  const privateKey = process.env.GOOGLE_PRIVATE_KEY ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n') : null;
-  
-  if (clientEmail && privateKey) {
-    auth = new JWT({
-      email: clientEmail,
-      key: privateKey,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-    console.log("✅ Auth JWT berhasil dibuat");
-  } else {
-    console.log("❌ Environment variables tidak lengkap");
-    auth = null;
-  }
+  const creds = JSON.parse(fs.readFileSync('credentials.json', 'utf8'));
+  auth = new JWT({
+    email: creds.client_email,
+    key: creds.private_key,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  });
+  console.log("✅ Auth berhasil dari credentials.json");
 } catch (err) {
-  console.error("Error creating auth:", err.message);
+  console.error("❌ Gagal baca credentials.json:", err.message);
   auth = null;
 }
 
-const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '1P664K_tzT-a-GDfXw62TUt2H6_qZO7CV2-i5RYVrcj0';
+const SPREADSHEET_ID = '1P664K_tzT-a-GDfXw62TUt2H6_qZO7CV2-i5RYVrcj0';
 
 // ========== ROUTE LOGIN ==========
 app.post('/login', (req, res) => {
@@ -52,7 +39,7 @@ app.post('/login', (req, res) => {
 // ========== ROUTE AMBIL DATA ==========
 app.get('/ambil-data', async (req, res) => {
   if (!auth) {
-    return res.status(500).json({ error: 'Auth not configured. Check environment variables.' });
+    return res.status(500).json({ error: 'Auth not configured. credentials.json not found.' });
   }
   
   const doc = new GoogleSpreadsheet(SPREADSHEET_ID, auth);
