@@ -8,7 +8,7 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 
-const SPREADSHEET_ID = '1P664K_tzT-a-GDfXw62TUt2H6_qZO7CV2-i5RYVrcj0';
+
 
 // Untuk production di Vercel (gunakan Environment Variables)
 const auth = new JWT({
