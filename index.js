@@ -7,7 +7,7 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 
-// ========== HARDCODE CREDENTIALS (PASTI BACA) ==========
+// ========== HARDCODE CREDENTIALS ==========
 const GOOGLE_CLIENT_EMAIL = 'admin-hutang@hutang-manager.iam.gserviceaccount.com';
 const GOOGLE_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
 MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCz2bg0yrie0C1W
@@ -40,7 +40,6 @@ JrPBsqGv5M7zMg6X97Gx4XtH
 
 const SPREADSHEET_ID = '1P664K_tzT-a-GDfXw62TUt2H6_qZO7CV2-i5RYVrcj0';
 
-// ========== INISIALISASI GOOGLE SHEETS ==========
 let doc = null;
 
 async function initGoogleSheets() {
@@ -50,18 +49,27 @@ async function initGoogleSheets() {
       client_email: GOOGLE_CLIENT_EMAIL,
       private_key: GOOGLE_PRIVATE_KEY,
     });
+    
+    // Test load info untuk cek koneksi
+    await doc.loadInfo();
     console.log("✅ Google Sheets auth berhasil");
+    console.log("📊 Sheet title:", doc.title);
+    
+    const sheet = doc.sheetsByIndex[0];
+    console.log("📄 Sheet pertama:", sheet.title);
+    
     return true;
   } catch (err) {
     console.error("❌ Gagal auth:", err.message);
+    console.error("Detail error:", err);
     return false;
   }
 }
 
-// Jalankan inisialisasi (tidak perlu await karena async)
+// Jalankan inisialisasi
 initGoogleSheets();
 
-// ========== ROUTE LOGIN ==========
+// ========== ROUTES ==========
 app.post('/login', (req, res) => {
   const { password } = req.body;
   if (password === 'anak-iot') {
@@ -71,7 +79,6 @@ app.post('/login', (req, res) => {
   }
 });
 
-// ========== ROUTE AMBIL DATA ==========
 app.get('/ambil-data', async (req, res) => {
   if (!doc) {
     return res.status(500).json({ error: 'Auth not ready. Please wait.' });
@@ -82,23 +89,24 @@ app.get('/ambil-data', async (req, res) => {
     const sheet = doc.sheetsByIndex[0];
     const rows = await sheet.getRows();
     
+    console.log(`📊 Jumlah baris ditemukan: ${rows.length}`);
+    
     const dataHutang = rows.map(row => ({
-      nama: row.get('Column 1'),
-      nominal: row.get('Column 2'),
-      keterangan: row.get('Column 3'),
-      status: row.get('Column 4'),
-      tanggal: row.get('Column 5')
+      nama: row.get('Column 1') || row.get('Nama') || '-',
+      nominal: row.get('Column 2') || row.get('Nominal') || '0',
+      keterangan: row.get('Column 3') || row.get('Keterangan') || '-',
+      status: row.get('Column 4') || row.get('Status') || 'Belum Bayar',
+      tanggal: row.get('Column 5') || row.get('Tanggal') || new Date().toISOString().split('T')[0]
     }));
     
     const validData = dataHutang.filter(item => item.nominal && item.nominal !== '0');
     res.json(validData);
   } catch (err) {
-    console.error('Error:', err.message);
+    console.error('Error ambil data:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// ========== ROUTE TAMBAH HUTANG ==========
 app.post('/tambah-hutang', async (req, res) => {
   if (!doc) return res.status(500).send('Auth not ready');
   
@@ -125,7 +133,6 @@ app.post('/tambah-hutang', async (req, res) => {
   }
 });
 
-// ========== ROUTE UPDATE STATUS ==========
 app.post('/update-status', async (req, res) => {
   if (!doc) return res.status(500).json({ error: 'Auth not ready' });
   
@@ -136,7 +143,8 @@ app.post('/update-status', async (req, res) => {
     const rows = await sheet.getRows();
     
     const targetRow = rows.find(row => 
-      row.get('Column 1') === nama && row.get('Column 5') === tanggal
+      (row.get('Column 1') === nama || row.get('Nama') === nama) && 
+      (row.get('Column 5') === tanggal || row.get('Tanggal') === tanggal)
     );
     
     if (targetRow) {
@@ -153,7 +161,6 @@ app.post('/update-status', async (req, res) => {
   }
 });
 
-// ========== ROUTE HAPUS HUTANG ==========
 app.post('/hapus-hutang', async (req, res) => {
   if (!doc) return res.status(500).json({ error: 'Auth not ready' });
   
@@ -166,7 +173,8 @@ app.post('/hapus-hutang', async (req, res) => {
     const rows = await sheet.getRows();
     
     const targetRow = rows.find(row => 
-      row.get('Column 1') === nama && row.get('Column 5') === tanggal
+      (row.get('Column 1') === nama || row.get('Nama') === nama) && 
+      (row.get('Column 5') === tanggal || row.get('Tanggal') === tanggal)
     );
     
     if (targetRow) {
@@ -182,12 +190,10 @@ app.post('/hapus-hutang', async (req, res) => {
   }
 });
 
-// ========== ROUTE HALAMAN UTAMA ==========
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// ========== SERVER START ==========
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server berjalan di port ${PORT}`);
