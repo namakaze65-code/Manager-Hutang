@@ -9,24 +9,27 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 
 // ========== BACA SERVICE ACCOUNT JSON LANGSUNG ==========
-let doc;
-try {
-  // Baca file credentials.json
-  const creds = JSON.parse(fs.readFileSync('credentials.json', 'utf8'));
-  
-  // Inisialisasi GoogleSpreadsheet dengan service account
-  doc = new GoogleSpreadsheet('1P664K_tzT-a-GDfXw62TUt2H6_qZO7CV2-i5RYVrcj0');
-  
-  // Gunakan service account auth
-  await doc.useServiceAccountAuth({
-    client_email: creds.client_email,
-    private_key: creds.private_key,
-  });
-  
-  console.log("✅ Auth berhasil dari credentials.json");
-} catch (err) {
-  console.error("❌ Gagal auth:", err.message);
+let doc = null;
+
+// Fungsi untuk inisialisasi auth
+async function initAuth() {
+  try {
+    const creds = JSON.parse(fs.readFileSync('credentials.json', 'utf8'));
+    doc = new GoogleSpreadsheet('1P664K_tzT-a-GDfXw62TUt2H6_qZO7CV2-i5RYVrcj0');
+    await doc.useServiceAccountAuth({
+      client_email: creds.client_email,
+      private_key: creds.private_key,
+    });
+    console.log("✅ Auth berhasil dari credentials.json");
+    return true;
+  } catch (err) {
+    console.error("❌ Gagal auth:", err.message);
+    return false;
+  }
 }
+
+// Jalankan init auth
+initAuth();
 
 // ========== ROUTE LOGIN ==========
 app.post('/login', (req, res) => {
