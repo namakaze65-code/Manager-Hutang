@@ -1,0 +1,30 @@
+# Kredensial dan rahasia
+credentials.json
+.env
+*.key
+*.pem
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# File sistem
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
