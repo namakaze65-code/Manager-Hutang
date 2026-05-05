@@ -8,14 +8,39 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 
-// ========== HARDCODE CREDENTIALS (SEMENTARA) ==========
-// TODO: Pindahkan ke Environment Variables nanti
-const GOOGLE_CLIENT_EMAIL = 'admin-hutang@hutang-manager.iam.gserviceaccount.com';
-const GOOGLE_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCz2bg0yrie0C1W\n9gxyoVH/qRjoruM4ZPdrbLkaHrNDPbCA62m1oPY/452Ifk9iE5H+UaGEgLW51OF5\nIe8Yg/VBMRRb2TPzWiuViSpxd9NL3reLnPKKNzdvhjjwAHeoOYYeZ7YAkMMwuQ8z\nD9+BQCCaTtm3L0pInoPbD8eLsf+Zue8QUL/ol275JFwgFmMCR0/UmomrWmGtfCKi\nkUbHAOa7oYsr4DAhNN+y6zBsgogCjXojGVyBD0rmhCm5QTTbhZhhE+ZH23yQKGrG\n2it88HCeTOyBiI0wHGQl98NG+vRp21hOf6V8XyKrDR+zHPiLId4KHKzHfGXJUh4a\nmWo6wUEDAgMBAAECggEAAwZAik8YO4WlmS3F46Ik24ALeI2DQTnMWSwHVwZ4mFps\n8yg8fMG0dsYJNg9mEuT3uFvFEO8XWW2p2bxEQscwN0eedtg4UG32wdl0kHJIxUPD\nFjoLWQJnbW48IT9FIPMtPQdLFoG1yvTHjO10lqbXJYQQqnt/YGNAkmRoLOsgvGzC\n5pPiFuf5EH8jjCLK4a9EAA8mclHnbKZbdECE5lCRxCG4ihLpXk4HHaHKuMVKUpTP\nzazBMbSdT6FotwIQW2jfD/1uVArQEoHXr0b78cA+uuh65p+Mrfy0VDvX3sDlQGFA\n7sm4RASyPUtBNbQiIYXmkfoKfdRAOJ8KgZkiYyTtcQKBgQDbSirzv59yHQFWOs6x\nAI4iu/iftFXFnEsEs4HaquXWbDWlZyBmnSvcG3ePHsObXfAuajn/nhoRATp2fosB\nWgowA7jcGE8uZWyC/yiBHJdmfeWpQJi09VHnAZ6OA4gkCRLZ7mbnSLShY84v456P\n4aHqVjuJnt9nYfFTai2CX11MmQKBgQDR9VoTZNzhZ4uln46/5XocIJRoiTEu9EqU\ns5SHbm/kf6/oLms87sCctGc8nUpQ/8l9EJw4b//zHki2PJREGWhAJeouOlknnh2G\nwyreAVy//em0LxKuNYczShuQmmuHCdq1T9U4RqixQhWJRs8Xt2iTNLLC8CSod3i6\n1GdZCsm/+wKBgQDEzeaIhaSSpGdrvTF893OYxrxWkGEeDaviFzxmRFQrwUfQHyKc\nFViknN4LS1/gE0mYTmuo9nqMYl7Ws7ELUISuHNkOZp7Bk/L0Cg2O+lsCd+Diqn+i\ngDy2JuTmrVLEjIQnpGckEUNTSKBmqFDI7oYDKssaMsRrIyKTa0pWpEG2mQKBgQDR\nVj7EPXmZaAMtVIQgwq1YZAd0nu0h8sJ1twNtcOgxPDpoVffoHeh/lcOlBPK3BgGg\nJ7KK9uiMP3Kh+I6fw3FVHDh8dQK1ZInt9qPEDDms135vf8uxVH+D3OzU5ZI2ZtXg\nl0NxQ8ooSkpsv+P1spGazB08DfGO4ufF58dPWVlEhwKBgCgFyqMjpc7A7ZkWsJ18\nO/zXbyEFxg1LMttfYyC/IhMfANGrISprdK+UI71bFQP9nBFHiDb6iczOwzadgXSK\nDGLoP0j7JKJzMz3FsZvdXRjrsPb2X4HN0dReQz8jm7OGPou5Jg38T/dROPw8jnG1\nJrPBsqGv5M7zMg6X97Gx4XtH\n-----END PRIVATE KEY-----\n';
+// ========== FORMAT PRIVATE_KEY YANG BENAR ==========
+const privateKey = `-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCz2bg0yrie0C1W
+9gxyoVH/qRjoruM4ZPdrbLkaHrNDPbCA62m1oPY/452Ifk9iE5H+UaGEgLW51OF5
+Ie8Yg/VBMRRb2TPzWiuViSpxd9NL3reLnPKKNzdvhjjwAHeoOYYeZ7YAkMMwuQ8z
+D9+BQCCaTtm3L0pInoPbD8eLsf+Zue8QUL/ol275JFwgFmMCR0/UmomrWmGtfCKi
+kUbHAOa7oYsr4DAhNN+y6zBsgogCjXojGVyBD0rmhCm5QTTbhZhhE+ZH23yQKGrG
+2it88HCeTOyBiI0wHGQl98NG+vRp21hOf6V8XyKrDR+zHPiLId4KHKzHfGXJUh4a
+mWo6wUEDAgMBAAECggEAAwZAik8YO4WlmS3F46Ik24ALeI2DQTnMWSwHVwZ4mFps
+8yg8fMG0dsYJNg9mEuT3uFvFEO8XWW2p2bxEQscwN0eedtg4UG32wdl0kHJIxUPD
+FjoLWQJnbW48IT9FIPMtPQdLFoG1yvTHjO10lqbXJYQQqnt/YGNAkmRoLOsgvGzC
+5pPiFuf5EH8jjCLK4a9EAA8mclHnbKZbdECE5lCRxCG4ihLpXk4HHaHKuMVKUpTP
+zazBMbSdT6FotwIQW2jfD/1uVArQEoHXr0b78cA+uuh65p+Mrfy0VDvX3sDlQGFA
+7sm4RASyPUtBNbQiIYXmkfoKfdRAOJ8KgZkiYyTtcQKBgQDbSirzv59yHQFWOs6x
+AI4iu/iftFXFnEsEs4HaquXWbDWlZyBmnSvcG3ePHsObXfAuajn/nhoRATp2fosB
+WgowA7jcGE8uZWyC/yiBHJdmfeWpQJi09VHnAZ6OA4gkCRLZ7mbnSLShY84v456P
+4aHqVjuJnt9nYfFTai2CX11MmQKBgQDR9VoTZNzhZ4uln46/5XocIJRoiTEu9EqU
+s5SHbm/kf6/oLms87sCctGc8nUpQ/8l9EJw4b//zHki2PJREGWhAJeouOlknnh2G
+wyreAVy//em0LxKuNYczShuQmmuHCdq1T9U4RqixQhWJRs8Xt2iTNLLC8CSod3i6
+1GdZCsm/+wKBgQDEzeaIhaSSpGdrvTF893OYxrxWkGEeDaviFzxmRFQrwUfQHyKc
+FViknN4LS1/gE0mYTmuo9nqMYl7Ws7ELUISuHNkOZp7Bk/L0Cg2O+lsCd+Diqn+i
+gDy2JuTmrVLEjIQnpGckEUNTSKBmqFDI7oYDKssaMsRrIyKTa0pWpEG2mQKBgQDR
+Vj7EPXmZaAMtVIQgwq1YZAd0nu0h8sJ1twNtcOgxPDpoVffoHeh/lcOlBPK3BgGg
+J7KK9uiMP3Kh+I6fw3FVHDh8dQK1ZInt9qPEDDms135vf8uxVH+D3OzU5ZI2ZtXg
+l0NxQ8ooSkpsv+P1spGazB08DfGO4ufF58dPWVlEhwKBgCgFyqMjpc7A7ZkWsJ18
+O/zXbyEFxg1LMttfYyC/IhMfANGrISprdK+UI71bFQP9nBFHiDb6iczOwzadgXSK
+DGLoP0j7JKJzMz3FsZvdXRjrsPb2X4HN0dReQz8jm7OGPou5Jg38T/dROPw8jnG1
+JrPBsqGv5M7zMg6X97Gx4XtH
+-----END PRIVATE KEY-----\n`;
 
 const auth = new JWT({
-  email: GOOGLE_CLIENT_EMAIL,
-  key: GOOGLE_PRIVATE_KEY,
+  email: 'admin-hutang@hutang-manager.iam.gserviceaccount.com',
+  key: privateKey,
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 });
 
@@ -82,7 +107,7 @@ app.post('/tambah-hutang', async (req, res) => {
   }
 });
 
-// ========== ROUTE UPDATE STATUS (BAYAR) ==========
+// ========== ROUTE UPDATE STATUS ==========
 app.post('/update-status', async (req, res) => {
   const { nama, tanggal } = req.body;
   const doc = new GoogleSpreadsheet(SPREADSHEET_ID, auth);
