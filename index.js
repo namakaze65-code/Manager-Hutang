@@ -2,25 +2,55 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const path = require('path');
-const fs = require('fs');
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 
-// ========== BACA SERVICE ACCOUNT JSON LANGSUNG ==========
+// ========== HARDCODE CREDENTIALS (PASTI BACA) ==========
+const GOOGLE_CLIENT_EMAIL = 'admin-hutang@hutang-manager.iam.gserviceaccount.com';
+const GOOGLE_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCz2bg0yrie0C1W
+9gxyoVH/qRjoruM4ZPdrbLkaHrNDPbCA62m1oPY/452Ifk9iE5H+UaGEgLW51OF5
+Ie8Yg/VBMRRb2TPzWiuViSpxd9NL3reLnPKKNzdvhjjwAHeoOYYeZ7YAkMMwuQ8z
+D9+BQCCaTtm3L0pInoPbD8eLsf+Zue8QUL/ol275JFwgFmMCR0/UmomrWmGtfCKi
+kUbHAOa7oYsr4DAhNN+y6zBsgogCjXojGVyBD0rmhCm5QTTbhZhhE+ZH23yQKGrG
+2it88HCeTOyBiI0wHGQl98NG+vRp21hOf6V8XyKrDR+zHPiLId4KHKzHfGXJUh4a
+mWo6wUEDAgMBAAECggEAAwZAik8YO4WlmS3F46Ik24ALeI2DQTnMWSwHVwZ4mFps
+8yg8fMG0dsYJNg9mEuT3uFvFEO8XWW2p2bxEQscwN0eedtg4UG32wdl0kHJIxUPD
+FjoLWQJnbW48IT9FIPMtPQdLFoG1yvTHjO10lqbXJYQQqnt/YGNAkmRoLOsgvGzC
+5pPiFuf5EH8jjCLK4a9EAA8mclHnbKZbdECE5lCRxCG4ihLpXk4HHaHKuMVKUpTP
+zazBMbSdT6FotwIQW2jfD/1uVArQEoHXr0b78cA+uuh65p+Mrfy0VDvX3sDlQGFA
+7sm4RASyPUtBNbQiIYXmkfoKfdRAOJ8KgZkiYyTtcQKBgQDbSirzv59yHQFWOs6x
+AI4iu/iftFXFnEsEs4HaquXWbDWlZyBmnSvcG3ePHsObXfAuajn/nhoRATp2fosB
+WgowA7jcGE8uZWyC/yiBHJdmfeWpQJi09VHnAZ6OA4gkCRLZ7mbnSLShY84v456P
+4aHqVjuJnt9nYfFTai2CX11MmQKBgQDR9VoTZNzhZ4uln46/5XocIJRoiTEu9EqU
+s5SHbm/kf6/oLms87sCctGc8nUpQ/8l9EJw4b//zHki2PJREGWhAJeouOlknnh2G
+wyreAVy//em0LxKuNYczShuQmmuHCdq1T9U4RqixQhWJRs8Xt2iTNLLC8CSod3i6
+1GdZCsm/+wKBgQDEzeaIhaSSpGdrvTF893OYxrxWkGEeDaviFzxmRFQrwUfQHyKc
+FViknN4LS1/gE0mYTmuo9nqMYl7Ws7ELUISuHNkOZp7Bk/L0Cg2O+lsCd+Diqn+i
+gDy2JuTmrVLEjIQnpGckEUNTSKBmqFDI7oYDKssaMsRrIyKTa0pWpEG2mQKBgQDR
+Vj7EPXmZaAMtVIQgwq1YZAd0nu0h8sJ1twNtcOgxPDpoVffoHeh/lcOlBPK3BgGg
+J7KK9uiMP3Kh+I6fw3FVHDh8dQK1ZInt9qPEDDms135vf8uxVH+D3OzU5ZI2ZtXg
+l0NxQ8ooSkpsv+P1spGazB08DfGO4ufF58dPWVlEhwKBgCgFyqMjpc7A7ZkWsJ18
+O/zXbyEFxg1LMttfYyC/IhMfANGrISprdK+UI71bFQP9nBFHiDb6iczOwzadgXSK
+DGLoP0j7JKJzMz3FsZvdXRjrsPb2X4HN0dReQz8jm7OGPou5Jg38T/dROPw8jnG1
+JrPBsqGv5M7zMg6X97Gx4XtH
+-----END PRIVATE KEY-----\n`;
+
+const SPREADSHEET_ID = '1P664K_tzT-a-GDfXw62TUt2H6_qZO7CV2-i5RYVrcj0';
+
+// ========== INISIALISASI GOOGLE SHEETS ==========
 let doc = null;
 
-// Fungsi untuk inisialisasi auth
-async function initAuth() {
+async function initGoogleSheets() {
   try {
-    const creds = JSON.parse(fs.readFileSync('credentials.json', 'utf8'));
-    doc = new GoogleSpreadsheet('1P664K_tzT-a-GDfXw62TUt2H6_qZO7CV2-i5RYVrcj0');
+    doc = new GoogleSpreadsheet(SPREADSHEET_ID);
     await doc.useServiceAccountAuth({
-      client_email: creds.client_email,
-      private_key: creds.private_key,
+      client_email: GOOGLE_CLIENT_EMAIL,
+      private_key: GOOGLE_PRIVATE_KEY,
     });
-    console.log("✅ Auth berhasil dari credentials.json");
+    console.log("✅ Google Sheets auth berhasil");
     return true;
   } catch (err) {
     console.error("❌ Gagal auth:", err.message);
@@ -28,8 +58,8 @@ async function initAuth() {
   }
 }
 
-// Jalankan init auth
-initAuth();
+// Jalankan inisialisasi (tidak perlu await karena async)
+initGoogleSheets();
 
 // ========== ROUTE LOGIN ==========
 app.post('/login', (req, res) => {
@@ -44,7 +74,7 @@ app.post('/login', (req, res) => {
 // ========== ROUTE AMBIL DATA ==========
 app.get('/ambil-data', async (req, res) => {
   if (!doc) {
-    return res.status(500).json({ error: 'Auth not configured. Check credentials.json' });
+    return res.status(500).json({ error: 'Auth not ready. Please wait.' });
   }
   
   try {
@@ -63,20 +93,19 @@ app.get('/ambil-data', async (req, res) => {
     const validData = dataHutang.filter(item => item.nominal && item.nominal !== '0');
     res.json(validData);
   } catch (err) {
-    console.error('Error ambil data:', err.message);
+    console.error('Error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
 // ========== ROUTE TAMBAH HUTANG ==========
 app.post('/tambah-hutang', async (req, res) => {
-  if (!doc) return res.status(500).send('Auth not configured');
+  if (!doc) return res.status(500).send('Auth not ready');
   
   const { nama, nominal, keterangan } = req.body;
   try {
     await doc.loadInfo();
     const sheet = doc.sheetsByIndex[0];
-    
     const today = new Date();
     const tanggal = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     
@@ -98,7 +127,7 @@ app.post('/tambah-hutang', async (req, res) => {
 
 // ========== ROUTE UPDATE STATUS ==========
 app.post('/update-status', async (req, res) => {
-  if (!doc) return res.status(500).json({ error: 'Auth not configured' });
+  if (!doc) return res.status(500).json({ error: 'Auth not ready' });
   
   const { nama, tanggal } = req.body;
   try {
@@ -126,7 +155,7 @@ app.post('/update-status', async (req, res) => {
 
 // ========== ROUTE HAPUS HUTANG ==========
 app.post('/hapus-hutang', async (req, res) => {
-  if (!doc) return res.status(500).json({ error: 'Auth not configured' });
+  if (!doc) return res.status(500).json({ error: 'Auth not ready' });
   
   const { nama, tanggal } = req.body;
   console.log(`🗑️ Mencoba hapus: ${nama} - ${tanggal}`);
