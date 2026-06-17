@@ -1,13 +1,14 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
+const { JWT } = require('google-auth-library');
 const path = require('path');
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 
-// ========== HARDCODE CREDENTIALS ==========
+// ========== CREDENTIALS ==========
 const GOOGLE_CLIENT_EMAIL = 'admin-hutang@hutang-manager.iam.gserviceaccount.com';
 const GOOGLE_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
 MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCz2bg0yrie0C1W
@@ -40,16 +41,18 @@ JrPBsqGv5M7zMg6X97Gx4XtH
 
 const SPREADSHEET_ID = '1P664K_tzT-a-GDfXw62TUt2H6_qZO7CV2-i5RYVrcj0';
 
-// ========== INISIALISASI AUTH (WAJIB SELESAI SEBELUM ROUTE) ==========
+// ========== AUTH JWT ==========
+const auth = new JWT({
+  email: GOOGLE_CLIENT_EMAIL,
+  key: GOOGLE_PRIVATE_KEY,
+  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+});
+
 let doc = null;
 
 async function initAuth() {
   try {
-    doc = new GoogleSpreadsheet(SPREADSHEET_ID);
-    await doc.useServiceAccountAuth({
-      client_email: GOOGLE_CLIENT_EMAIL,
-      private_key: GOOGLE_PRIVATE_KEY,
-    });
+    doc = new GoogleSpreadsheet(SPREADSHEET_ID, auth);
     await doc.loadInfo();
     console.log("✅ Auth berhasil, sheet title:", doc.title);
     return true;
@@ -59,16 +62,9 @@ async function initAuth() {
   }
 }
 
-// Jalankan auth SEBELUM server jalan
-(async () => {
-  const success = await initAuth();
-  if (!success) {
-    console.error("⚠️ Server tetap jalan tapi auth gagal!");
-  }
-})();
+initAuth();
 
 // ========== ROUTES ==========
-
 app.post('/login', (req, res) => {
   const { password } = req.body;
   if (password === 'anak-iot') {
@@ -80,7 +76,7 @@ app.post('/login', (req, res) => {
 
 app.get('/ambil-data', async (req, res) => {
   if (!doc) {
-    return res.status(500).json({ error: 'Auth not ready. Please wait a moment.' });
+    return res.status(500).json({ error: 'Auth not ready. Please wait.' });
   }
 
   try {
@@ -99,7 +95,7 @@ app.get('/ambil-data', async (req, res) => {
     const validData = dataHutang.filter(item => item.nominal && item.nominal !== '0');
     res.json(validData);
   } catch (err) {
-    console.error('Error ambil data:', err.message);
+    console.error('Error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -122,10 +118,8 @@ app.post('/tambah-hutang', async (req, res) => {
       'Column 5': tanggal
     });
 
-    console.log(`✅ Data ditambahkan: ${nama}`);
     res.redirect('/');
   } catch (err) {
-    console.error('Error tambah data:', err.message);
     res.status(500).send('❌ Error: ' + err.message);
   }
 });
